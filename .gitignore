@@ -1,11 +1,13 @@
+# Allow in source build
+[Bb]in
+# Ignore qt files when importing CMakeLists
+*.users
+# Ignore CLion project files
+*.idea
+cmake-build-debug
+# For macOs users
+.DS_Store
+# Gegelati lib
+lib/gegelatilib-0.5.1
+
 CMakeLists.txt.user
-CMakeCache.txt
-CMakeFiles
-CMakeScripts
-Testing
-Makefile
-cmake_install.cmake
-install_manifest.txt
-compile_commands.json
-CTestTestfile.cmake
-_deps
