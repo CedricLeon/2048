@@ -58,6 +58,7 @@ int main() {
     auto max = [](double a, double b)->double {return std::max(a, b); };
     auto ln = [](double a)->double {return std::log(a); };
     auto exp = [](double a)->double {return std::exp(a); };
+
     //auto cos = [](double a)->double {return std::cos(a); };
     //auto sin = [](double a)->double {return std::sin(a); };
     //auto tan = [](double a)->double {return std::tan(a); };
@@ -70,10 +71,10 @@ int main() {
     set.add(*(new Instructions::LambdaInstruction<double, double>(max)));
     set.add(*(new Instructions::LambdaInstruction<double>(exp)));
     set.add(*(new Instructions::LambdaInstruction<double>(ln)));
+
     //set.add(*(new Instructions::LambdaInstruction<double>(cos)));
     //set.add(*(new Instructions::LambdaInstruction<double>(sin)));
     //set.add(*(new Instructions::LambdaInstruction<double>(tan)));
-    // set.add(*(new Instructions::MultByConstant<double>()));     // <double, float>
     //set.add(*(new Instructions::LambdaInstruction<double>(pi)));
 
     // Initialisation
@@ -81,7 +82,8 @@ int main() {
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
     // Instantiate the LearningEnvironment
-    game2048 gameLE;
+    // (Z : 90), Down (S : 83), Right (D : 68) or Left (Q : 81)
+    game2048 gameLE({90, 83, 68, 81});
 
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
 

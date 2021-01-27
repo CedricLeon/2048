@@ -6,7 +6,7 @@ project(${PROJECT_NAME})
 set(CMAKE_CXX_STANDARD 17)
 
 
-set(DEBUG 1)
+set(DEBUG 0)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # *******************************************

@@ -4,7 +4,7 @@
 *.users
 # Ignore CLion project files
 *.idea
-cmake-build-debug
+cmake-build-*
 # For macOs users
 .DS_Store
 # Gegelati lib

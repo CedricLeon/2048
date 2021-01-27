@@ -27,7 +27,7 @@ int game2048::getBoard(int i, int j)
 
 void game2048::doAction(uint64_t actionID)
 {
-    move(actionID);
+    move(this->availableActions[actionID]);
 }
 
 std::vector<std::reference_wrapper<const Data::DataHandler>> game2048::getDataSources()
@@ -287,8 +287,8 @@ bool game2048::applyMove(int direction)
         startColumn = 3;
         columnStep = -1;
     }
-    // When it go Up, we decrease lines, but don't touch column
-    // When it go Right, don't touch lines but increase columns, etc ...
+    // When it goes Up, we decrease lines, but don't touch column
+    // When it goes Right, don't touch lines but increase columns, etc ...
     int dirLine[] = {-1, 0, 1, 0};
     int dirColumn[] = {0, 1, 0, -1};
 
@@ -307,10 +307,9 @@ bool game2048::applyMove(int direction)
                 int nextCol = col + dirColumn[direction];
                 // Check if the current Tile isn't 0 and if it can move
                 if(this->getBoard(row, col) != 0 && moveIsPossible(row, col, nextRow, nextCol))
-                // va de 12 à 15 puis de 7 à  ??? donc sort du "tableau" de taille 16
                 {
                     int nextValue = this->getBoard(nextRow, nextCol); // board[nextRow][nextCol];
-                    // Check if next Tile is 0 (in this case it is just a move)
+                    // Check if next Tile is 0 (in this case it's just a move)
                     if(nextValue == 0) // Case with just a move, not a merge
                     {
                         // Make the move ;)
@@ -348,7 +347,6 @@ bool game2048::applyMove(int direction)
 
                         // Update the new tile as "already merged" this turn
                         mergedTiles[nextRow][nextCol] = true;
-
 
                         // Indicate that a move had be done
                         movePossible = true;
