@@ -27,7 +27,7 @@ int game2048::getBoard(int i, int j)
 
 void game2048::doAction(uint64_t actionID)
 {
-    move(actionID);
+    move(this->availableActions[actionID]);
 }
 
 std::vector<std::reference_wrapper<const Data::DataHandler>> game2048::getDataSources()

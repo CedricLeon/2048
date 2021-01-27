@@ -28,7 +28,8 @@ private:
     *
     * ASCII code is used
     */
-    const std::vector<uint64_t> availableActions;
+    // const uint64_t nbActions = 4;
+    const std::vector<uint64_t> availableActions; // uint64_t ? ...
 
 
     // Current board containing 0 as empty or the tile value (2, 4, 8, etc...), size is 4*4 (row-order)
@@ -43,7 +44,8 @@ private:
     bool mergedTiles[4][4];     // Another board where each turn we will update if a tile has already be merged
     bool lost = false;          // Boolean indicating the lost
     bool win  = false;          // Boolean indicating the win
-    int score = 0;              // Total score of the game
+    int score = 0;              // Total score of the game (Each Turn merged Tiles values are added to the score)
+                                // Ex : Min score to win : 2048 + 2x1024 + 4x512 + 8x256 + etc... = 20480 (Hypothesis : only 4 are dropped)
 
 protected:
     // Setter for a new state (updating board)
@@ -86,5 +88,7 @@ public:
     std::vector<std::reference_wrapper<const Data::DataHandler>> getDataSources();
     double getScore() const;
     bool isTerminal() const;
+
+    // uint64_t getNbActions () const { return nbActions; } // Learn::LearningEnvironment::getNbActions() non virtual ?
 };
 #endif //INC_2048_GAME2048_H
