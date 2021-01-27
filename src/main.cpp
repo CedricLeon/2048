@@ -19,6 +19,31 @@
 #define NB_GENERATIONS 1200
 #endif
 
+void getKey(std::atomic<bool>& exit) {
+    std::cout << std::endl;
+    std::cout << "Press `q` then [Enter] to exit." << std::endl;
+    std::cout.flush();
+
+    exit = false;
+
+    while (!exit) {
+        char c;
+        std::cin >> c;
+        switch (c) {
+        case 'q':
+        case 'Q':
+            exit = true;
+            break;
+        default:
+            printf("Invalid key '%c' pressed.", c);
+            std::cout.flush();
+        }
+    }
+
+    printf("Program will terminate at the end of next generation.\n");
+    std::cout.flush();
+}
+
 // TPG training
 int main() {
 
@@ -48,7 +73,7 @@ int main() {
     //set.add(*(new Instructions::LambdaInstruction<double>(cos)));
     //set.add(*(new Instructions::LambdaInstruction<double>(sin)));
     //set.add(*(new Instructions::LambdaInstruction<double>(tan)));
-    set.add(*(new Instructions::MultByConstant<double>()));     // <double, float>
+    // set.add(*(new Instructions::MultByConstant<double>()));     // <double, float>
     //set.add(*(new Instructions::LambdaInstruction<double>(pi)));
 
     // Initialisation
@@ -70,16 +95,13 @@ int main() {
 #ifndef NO_CONSOLE_CONTROL
     // Console
     std::atomic<bool> exitProgram = true; // (set to false by other thread)
-    std::atomic<bool> toggleDisplay = true;
-    std::atomic<bool> doDisplay = false;
     std::atomic<uint64_t> generation = 0;
 
-    //std::thread threadDisplay(std::ref(exitProgram), std::ref(toggleDisplay), std::ref(doDisplay), &bestRoot, std::ref(set), std::ref(gameLE), std::ref(params), std::ref(generation));
+    std::thread threadKeyboard(getKey, std::ref(exitProgram));
 
     while (exitProgram); // Wait for other thread to print key info.
 #else
-    std::atomic<bool> exitProgram = false; // (set to false by other thread)
-	std::atomic<bool> toggleDisplay = false;
+    std::atomic<bool> exitProgram = false; 
 #endif
 
     // Basic logger
@@ -101,16 +123,6 @@ int main() {
         dotExporter.print();
 
         la.trainOneGeneration(i);
-
-#ifndef NO_CONSOLE_CONTROL
-        generation = i;
-        if (toggleDisplay && !exitProgram)
-        {
-            bestRoot = la.getBestRoot().first;
-            doDisplay = true;
-            while (doDisplay && !exitProgram);
-        }
-#endif
     }
 
     // Keep best policy
@@ -134,7 +146,7 @@ int main() {
 #ifndef NO_CONSOLE_CONTROL
     // Exit the thread
     std::cout << "Exiting program, press a key then [enter] to exit if nothing happens.";
-    //threadDisplay.join();
+    threadKeyboard.join();
 #endif
 
     return 0;
