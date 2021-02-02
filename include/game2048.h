@@ -24,13 +24,12 @@ private:
     * \brief Available actions for the LearningAgent.
     *
     * Each number $a$ in this list, corresponds to one
-    * action available for the LearningAgent : Going Up (Z : 90), Down (S : 83), Right (D : 68) or Left (Q : 81)
+    * action available for the LearningAgent : Going Up (Z : 90), Right (D : 68), Down (S : 83), or Left (Q : 81)
     *
     * ASCII code is used
     */
     // const uint64_t nbActions = 4;
     const std::vector<uint64_t> availableActions; // uint64_t ? ...
-
 
     // Current board containing 0 as empty or the tile value (2, 4, 8, etc...), size is 4*4 (row-order)
     // 0  1  2  3
@@ -41,6 +40,7 @@ private:
     Data::PrimitiveTypeArray<int> board; // Used as current state
 
     // ----- Variables -----
+    Data::PrimitiveTypeArray<int> impossibleDirection;
     bool mergedTiles[4][4];     // Another board where each turn we will update if a tile has already be merged
     bool lost = false;          // Boolean indicating the lost
     bool win  = false;          // Boolean indicating the win
@@ -51,17 +51,22 @@ protected:
     // Setter for a new state (updating board)
     void setBoard(int i, int j, int newValue);
     int getBoard(int i, int j);
+    int getImpossibleDirection(int i);
 
 public:
-    game2048(std::vector<uint64_t> actions) : LearningEnvironment(4), board(16), availableActions(actions)
+    game2048(std::vector<uint64_t> actions) : LearningEnvironment(4), board(16), impossibleDirection(4), availableActions(actions)
     {
         // Call resetBoard()
         for(int row = 0; row < 4; ++row)
+        {
+            this->impossibleDirection.setDataAt(typeid(int), row, 1);
             for(int col = 0; col < 4; ++col)
-                this->setBoard(row, col, 0); // board[row][col] = 0;
+                this->setBoard(row, col, 0);
+        }
         // 2 random Tiles start with a 2 or a 4
         for(int i = 0; i < 2; ++i)
             generateNewTile();
+        // Initialise all move to possible
     }
 
     // Print functions : used when a Human play (2nd main)
@@ -69,13 +74,14 @@ public:
     void printUI();
 
     // Initialisation
-    std::pair<int, int> generateUnoccupiedTile();
+    int generateUnoccupiedTile();
     int generateValueNewTile();
     bool generateNewTile();
     void initGame();
     void resetTilesMoved();
 
     // Move
+    void possibleDirections();
     bool moveIsPossible(int row, int col, int nextRow, int nextCol);
     bool applyMove(int direction);
     bool move(int command);

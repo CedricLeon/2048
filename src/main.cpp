@@ -59,10 +59,13 @@ int main() {
     auto ln = [](double a)->double {return std::log(a); };
     auto exp = [](double a)->double {return std::exp(a); };
 
-    //auto cos = [](double a)->double {return std::cos(a); };
-    //auto sin = [](double a)->double {return std::sin(a); };
-    //auto tan = [](double a)->double {return std::tan(a); };
-    //auto pi = [](double a)->double {return M_PI; };
+    auto minus_int = [](int a, int b)->int {return a - b; };
+    auto add_int = [](int a, int b)->int {return a + b; };
+    auto mult_int = [](int a, int b)->int {return a * b; };
+    //auto div_int = [](int a, int b)->int {return a / b; };
+    auto max_int = [](int a, int b)->int {return std::max(a, b); };
+    auto ln_int = [](int a)->int {return std::log(a); };
+    auto exp_int = [](int a)->int {return std::exp(a); };
 
     set.add(*(new Instructions::LambdaInstruction<double, double>(minus)));
     set.add(*(new Instructions::LambdaInstruction<double, double>(add)));
@@ -72,23 +75,27 @@ int main() {
     set.add(*(new Instructions::LambdaInstruction<double>(exp)));
     set.add(*(new Instructions::LambdaInstruction<double>(ln)));
 
-    //set.add(*(new Instructions::LambdaInstruction<double>(cos)));
-    //set.add(*(new Instructions::LambdaInstruction<double>(sin)));
-    //set.add(*(new Instructions::LambdaInstruction<double>(tan)));
-    //set.add(*(new Instructions::LambdaInstruction<double>(pi)));
+    set.add(*(new Instructions::LambdaInstruction<int, int>(minus_int)));
+    set.add(*(new Instructions::LambdaInstruction<int, int>(add_int)));
+    set.add(*(new Instructions::LambdaInstruction<int, int>(mult_int)));
+    //set.add(*(new Instructions::LambdaInstruction<int, int>(div_int)));
+    set.add(*(new Instructions::LambdaInstruction<int, int>(max_int)));
+    set.add(*(new Instructions::LambdaInstruction<int>(exp_int)));
+    set.add(*(new Instructions::LambdaInstruction<int>(ln_int)));
 
     // Initialisation
     Learn::LearningParameters params;
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
     // Instantiate the LearningEnvironment
-    // (Z : 90), Down (S : 83), Right (D : 68) or Left (Q : 81)
-    game2048 gameLE({90, 83, 68, 81});
+    // (Z : 90), Right (D : 68), Down (S : 83) or Left (Q : 81)
+    game2048 gameLE({90, 68, 83, 81});
 
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
 
     // Instantiate and init the learning agent
     Learn::ParallelLearningAgent la(gameLE, set, params);
+    //Learn::LearningAgent la(gameLE, set, params);
     la.init();
 
     const TPG::TPGVertex* bestRoot = NULL;
@@ -103,7 +110,7 @@ int main() {
 
     while (exitProgram); // Wait for other thread to print key info.
 #else
-    std::atomic<bool> exitProgram = false; 
+    std::atomic<bool> exitProgram = false;
 #endif
 
     // Basic logger
@@ -163,9 +170,9 @@ int main() {
 
     // Initialisation
 
-    auto game = new game2048();
+    game2048 game({90, 68, 83, 81});
     //initGame(); // Done in default contructor
-    game->printUI();
+    game.printUI();
     char command;
 
     // Main loop which break if user lost, won or enter the leave char (L or l)
@@ -173,13 +180,12 @@ int main() {
     {
         std::cout << "Choose a direction : ";
         std::cin >> command;
-        if((command == 76 || command == 108) || !game->move(command)) // ('l' or 'L' to leave) or (lost or win)
+        if((command == 76 || command == 108) || !game.move(command)) // ('l' or 'L' to leave) or (lost or win)
         {
             std::cout << "Leaving the Game" << std::endl;
             break;
         }
-        game->printUI();
+        game.printUI();
     }
-    delete game;
     return 0;
 }*/

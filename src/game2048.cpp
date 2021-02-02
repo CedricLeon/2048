@@ -11,7 +11,7 @@ void game2048::setBoard(int i, int j, int newValue)
         this->board.setDataAt(typeid(int), 4*i + j, newValue);
     } catch (std::out_of_range& e)
     {
-        std::cout << e.what() << std::endl;
+        std::cout << e.what() << " setBoard(" << i << "," << j << ")" << std::endl;
     }
 }
 
@@ -20,7 +20,17 @@ int game2048::getBoard(int i, int j)
     try {
         return (int)*(this->board.getDataAt(typeid(int), 4*i+j)).getSharedPointer<const int>();
     } catch (std::out_of_range& e) {
-        std::cout << e.what() << std::endl;
+        std::cout << e.what() << " getBoard(" << i << "," << j << ")" << std::endl;
+        return -1;
+    }
+}
+
+int game2048::getImpossibleDirection(int i)
+{
+    try {
+        return (int)*(this->impossibleDirection.getDataAt(typeid(int), i)).getSharedPointer<const int>();
+    } catch (std::out_of_range& e) {
+        std::cout << e.what() << " getImpossibleDirection(" << i << ")" << std::endl;
         return -1;
     }
 }
@@ -32,9 +42,12 @@ void game2048::doAction(uint64_t actionID)
 
 std::vector<std::reference_wrapper<const Data::DataHandler>> game2048::getDataSources()
 {
+    // Update the impossibleDirections vector
+    this->possibleDirections();
     // Return the game board
     auto result = std::vector<std::reference_wrapper<const Data::DataHandler>>();
     result.push_back(this->board);
+    result.push_back(this->impossibleDirection);
     return result;
 }
 
@@ -141,6 +154,13 @@ void game2048::printUI()
     std::cout << "  Score : " << score << std::endl;
     // Remind commands
     std::cout << "Z:Up, Q: Left, S:Down, D:Right, L:Leave" << std::endl;
+
+    // Update the impossibleDirections vector
+    this->possibleDirections();
+    std::cout << "ImpossibleDirections: | " << this->getImpossibleDirection(0) << " | "
+                                            << this->getImpossibleDirection(1) << " | "
+                                            << this->getImpossibleDirection(2) << " | "
+                                            << this->getImpossibleDirection(3) << " | " << std::endl;
 }
 
 /**
@@ -160,30 +180,32 @@ int game2048::generateValueNewTile()
  * @return a std::pair<int, int> which correspond to row and column indexes
  *         if there is no unoccupied tile : losing condition, return <-1;-1>
  */
-std::pair<int, int> game2048::generateUnoccupiedTile()
+int game2048::generateUnoccupiedTile()
 {
-    // Looking for unoccupied tiles
-    int nbUnoccupied = 0;
-    std::pair<int, int> unoccupied[16];
-    for(int row = 0; row < 4; ++row)
+    std::vector<int> unoccupied;
+    for(int i = 0; i < 16; i++)
     {
-        for(int col = 0; col < 4; ++col)
-        {
-            if(this->getBoard(row, col) == 0)
+        try {
+            if((int)*(this->board.getDataAt(typeid(int), i)).getSharedPointer<const int>() == 0)
             {
-                unoccupied[nbUnoccupied].first = row;
-                unoccupied[nbUnoccupied].second = col;
-                nbUnoccupied ++;
+                unoccupied.push_back(i);
             }
+        } catch (std::out_of_range& e) {
+            std::cout << e.what() << " generateUnoccupiedTile(" << i << ")" << std::endl;
         }
     }
     // If there is no unoccupied tile : losing condition, return <-1;-1>
-    if(nbUnoccupied == 0)
-        return std::make_pair(-1, -1);
+    if(unoccupied.empty())
+        return -1;
 
     // Return a random tile among unoccupied Tiles
-    int randomTile = this->rng.getInt32(0, nbUnoccupied);
-    return std::make_pair(unoccupied[randomTile].first, unoccupied[randomTile].second);
+    int randomTile2 = this->rng.getInt32(0, unoccupied.size()-1);
+
+    //std::cout << "generateUnoccupiedTile(), randomTile Num2 : " << randomTile2 << std::endl;
+    //for (auto i : unoccupied)
+    //    std::cout <<  " | "  << i;
+
+    return randomTile2;
 }
 
 /**
@@ -194,11 +216,22 @@ std::pair<int, int> game2048::generateUnoccupiedTile()
 bool game2048::generateNewTile()
 {
     // Finding which Tile is free
-    std::pair<int, int> randomTile = generateUnoccupiedTile();
-    if(randomTile.first == -1 || randomTile.second == -1)
+    //std::pair<int, int> randomTile = generateUnoccupiedTile();
+    int randomTile = generateUnoccupiedTile();
+    if(randomTile == -1)
         return false;
+    //if(randomTile.first == -1 || randomTile.second == -1)
+    //    return false;
     // Computing its value
-    this->setBoard(randomTile.first, randomTile.second, generateValueNewTile()); // board[randomTile.first][randomTile.second] = generateValueNewTile();
+    //std::cout << "applyMove(), randomTile.first : " << randomTile.first << " / randomTile.second : " << randomTile.second << std::endl;
+    try
+    {
+        this->board.setDataAt(typeid(int), randomTile, generateValueNewTile());
+    } catch (std::out_of_range& e)
+    {
+        std::cout << e.what() << " generateNewTileIMABABYGIRL(" << randomTile << ")" << std::endl;
+    }
+    //this->setBoard(randomTile.first, randomTile.second, generateValueNewTile()); // board[randomTile.first][randomTile.second] = generateValueNewTile();
     return true;
 }
 
@@ -258,11 +291,12 @@ bool game2048::moveIsPossible(int row, int col, int nextRow, int nextCol)
         // std::cout << "Checking leading out of board move" << std::endl;
         return false;
     }
-    int valueNextTile = this->getBoard(nextRow, nextCol); // int valueNextTile = board[nextRow][nextCol];
+    int value = this->getBoard(row, col);
+    int valueNextTile = this->getBoard(nextRow, nextCol);
     //std::cout << "row : " << row << "; col : " << col << "; nextRow : " << nextRow << "; nextCol : " << nextCol;
-    //std::cout << "      current value : " << board[row][col] << "; valueNextTile : " << valueNextTile << std::endl;
+    //std::cout << "      current value : " << value << "; valueNextTile : " << valueNextTile << std::endl;
     // Check if next Tile has same value than the current or if it's different from 0
-    return valueNextTile == 0 || this->getBoard(row, col) == valueNextTile; // board[row][col] == valueNextTile;
+    return valueNextTile == 0 || value == valueNextTile;
 }
 
 /**
@@ -293,6 +327,7 @@ bool game2048::applyMove(int direction)
     int dirColumn[] = {0, 1, 0, -1};
 
     bool movePossible, canAddTile = false;
+
     do
     {
         movePossible = false;
@@ -308,20 +343,21 @@ bool game2048::applyMove(int direction)
                 // Check if the current Tile isn't 0 and if it can move
                 if(this->getBoard(row, col) != 0 && moveIsPossible(row, col, nextRow, nextCol))
                 {
-                    int nextValue = this->getBoard(nextRow, nextCol); // board[nextRow][nextCol];
+                    int value = this->getBoard(row, col);
+                    int nextValue = this->getBoard(nextRow, nextCol);
                     // Check if next Tile is 0 (in this case it's just a move)
                     if(nextValue == 0) // Case with just a move, not a merge
                     {
                         // Make the move ;)
-                        this->setBoard(nextRow, nextCol, this->getBoard(row, col)); // board[nextRow][nextCol] = board[row][col];
-                        this->setBoard(row, col, 0); // board[row][col] = 0;
+                        //std::cout << "applyMove(), Move : row : " << row << " / col : " << col << " / nextRow : " << nextRow << " / nextCol : " << nextCol << std::endl;
+                        this->setBoard(nextRow, nextCol, value);
+                        this->setBoard(row, col, 0);
 
                         // If the moved Tile was already merged, update the mergedTiles board
                         if(mergedTiles[row][col])
                         {
                             mergedTiles[nextRow][nextCol] = true;
                             mergedTiles[row][col] = false;
-                            //std::cout << "MergedTiles updated to :  (" << nextRow << ";" << nextCol << ")" << std::endl;
                         }
 
                         // Indicate that a move had be done
@@ -329,18 +365,17 @@ bool game2048::applyMove(int direction)
                         canAddTile = true;
                     }
                         // If it's not just a move, check if each tiles had not already be merged
-                    else if(nextValue == this->getBoard(row, col) && !mergedTiles[row][col] && !mergedTiles[nextRow][nextCol]) // Particular case with a merge
+                    else if(nextValue == value && !mergedTiles[row][col] && !mergedTiles[nextRow][nextCol]) // Particular case with a merge
                     {
                         // If it's a "new" merge, ... merge the tiles
-                        this->setBoard(nextRow, nextCol, this->getBoard(nextRow, nextCol)*2); // board[nextRow][nextCol] *= 2;
-                        this->setBoard(row, col, 0); // board[row][col] = 0;
-                        score += this->getBoard(nextRow, nextCol); // score += board[nextRow][nextCol];
+                        //std::cout << "applyMove(), MERGE : row : " << row << " / col : " << col << " / nextRow : " << nextRow << " / nextCol : " << nextCol << std::endl;
+                        this->setBoard(nextRow, nextCol, nextValue*2);
+                        this->setBoard(row, col, 0);
+                        score += this->getBoard(nextRow, nextCol);
 
                         // Check win condition
                         if(this->getBoard(nextRow, nextCol) == 2048)
                         {
-                            std::cout << "You won !!! Congratulations !!!" << std::endl;
-                            std::cout << "Your final score is : " << score << std::endl;
                             win = true;
                             return false;
                         }
@@ -351,7 +386,6 @@ bool game2048::applyMove(int direction)
                         // Indicate that a move had be done
                         movePossible = true;
                         canAddTile = true;
-                        //std::cout << "Merged :  (" << nextRow << ";" << nextCol << ")" << std::endl;
                     }
                 } // move possible ?
             } // columns
@@ -367,13 +401,69 @@ bool game2048::applyMove(int direction)
         // If we can't add a new tile, it's lose condition
         if(!generateNewTile())
         {
-            std::cout << "You lose !" << std::endl;
+            //std::cout << "You lose !" << std::endl;
             lost = true;
             return false;
         }
         return true;
     }
+
+    // The move was impossible : the AI lose
     return false;
+}
+
+/**
+ * possibleDirections() : Update the impossibleDirection vector to indicate the Agent which move is possible
+ */
+void game2048::possibleDirections()
+{
+    for(int direction = 0; direction < 4; direction++)
+    {
+        int startLine = 0, startColumn = 0, lineStep = 1, columnStep = 1;
+        if(direction == 2)
+        {
+            startLine = 3;
+            lineStep = -1;
+        }else if (direction == 1)
+        {
+            startColumn = 3;
+            columnStep = -1;
+        }
+        int dirLine[] = {-1, 0, 1, 0};
+        int dirColumn[] = {0, 1, 0, -1};
+
+        bool movePossible = false;
+
+        for(int row = startLine; row >=0 && row < 4 && !movePossible; row += lineStep)
+        {
+            for(int col = startColumn; col >= 0 && col < 4 && !movePossible; col += columnStep)
+            {
+                int nextRow = row + dirLine[direction];
+                int nextCol = col + dirColumn[direction];
+                if((nextRow >= 0 && nextRow < 4) && (nextCol >= 0 && nextCol < 4))
+                {
+                    int value = this->getBoard(row, col);
+                    int nextValue = this->getBoard(nextRow, nextCol);
+                    if(value != 0 && (nextValue == 0 || nextValue == value))
+                    {
+                        //std::cout << "possibleDirections() movePossible: " << movePossible << ", dir: " << direction << ", row: " << row << ", col: " << col << " , value: " << value << ", nextVal: " << nextValue << std::endl;
+                        movePossible = true;
+                    }
+                }
+            } // columns
+        } // rows
+        try
+        {
+            if(movePossible)
+                this->impossibleDirection.setDataAt(typeid(int), direction, 1);
+            else
+                this->impossibleDirection.setDataAt(typeid(int), direction, 0);
+        } catch (std::out_of_range& e)
+        {
+            std::cout << e.what() << " possibleDirections(" << movePossible << ")" << std::endl;
+        }
+    } // for all directions
+
 }
 
 /**
@@ -414,9 +504,15 @@ bool game2048::move(int command)
     if(!applyMove(direction))
     {
         if(lost || win)
+        {
             return false;
+        }
         else
-            std::cout << "This move is impossible" << std::endl;
+        {
+            //std::cout << "This move is impossible" << std::endl;
+            // For TPG trying to make an impossible move will result with a Game Over :
+            return false;
+        }
     }
     return true;
 }
